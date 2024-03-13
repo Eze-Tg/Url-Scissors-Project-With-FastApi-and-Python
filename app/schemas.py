@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 class URLBase(BaseModel):
     target_url: str
+    custom_alias: str = None
 
 class URL(URLBase):
     is_active: bool

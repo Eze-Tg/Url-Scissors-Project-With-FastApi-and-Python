@@ -4,10 +4,11 @@ import validators
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-import models, crud, schemas
+import models, crud, schemas, utils
 from database import SessionLocal, engine
 from starlette.datastructures import URL
 from config import get_settings
+from typing import Optional
 
 
 app = FastAPI()
@@ -51,6 +52,34 @@ def create_url(url: schemas.URLBase, db: Session = Depends(get_db)):
 
     db_url = crud.create_db_url(db=db, url=url)
     return get_admin_info(db_url)
+
+
+@app.post("/custom/")
+def create_custom_url(url: schemas.URLBase, db: Session = Depends(get_db)):
+    '''
+    Create a custom URL, Remeber to change your url to YOUR URL!,
+    right now, it is set as http://yourcustomdomain.com'''
+    custom_alias = url.custom_alias
+
+     # Check if Custom Alias is Provided
+    if not custom_alias:
+        raise HTTPException(status_code=400, detail="Custom Alias is required")
+    
+
+
+    short_url = utils.generate_short_url(long_url=url.target_url, custom_alias=url.custom_alias)
+
+    print (f'++++Custom Url is {short_url}')
+
+    db_url = crud.create_db_url(db=db, url=url)
+
+
+    return {"short_url": short_url} 
+
+ # Check if Custom Alias is Unique
+    # if crud.get_db_url_by_custom_alias(db=db, custom_alias=custom_alias):
+    #     raise HTTPException(status_code=400, detail="Custom Alias already exists")
+
 
 
 

@@ -1,8 +1,9 @@
 # Url-Scissors/models.py
 
 from sqlalchemy import Boolean, Column, Integer, String
-
+from sqlalchemy.orm import relationship
 from database import Base
+from datetime import datetime
 
 class URL(Base):
     __tablename__ = "urls"
