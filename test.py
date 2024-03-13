@@ -1,7 +1,6 @@
-from database import SessionLocal
+from keygen import create_random_key
+create_random_key()
 
-db = SessionLocal()
+key = create_random_key(length=9)
 
-from models import URL
-db.query(URL).all()
-[]
+print(key)
