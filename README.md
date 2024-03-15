@@ -5,7 +5,7 @@ URL Scissors ✂️ With FastAPI and Python
 
 ## 1. What is the project?
 
-In this tutorial, we have built a fully functional FastAPI-driven Python web app that creates shortened URLs that forward to target URLs. URLs can be extremely long and not user-friendly. This is where a URL shortener can come in handy. A URL shortener reduces the number of characters in a URL, making it easier to read, remember, and share.
+We have built a fully functional FastAPI-driven Python web app that creates shortened URLs that forward to target URLs. URLs can be extremely long and not user-friendly. This is where a URL Scissors can come in handy. Url Scissors reduces the number of characters in a URL, making it easier to read, remember, and share.
 
 
 ## 2. Tech Stack:
@@ -57,6 +57,10 @@ ii. Run the live server using uvicorn.
 ```commandline
 (venv) $ uvicorn shortener_app.main:app --reload
 ```
+
+## TO Deploy on Render
+
+i. uvicorn main:app --host 0.0.0.0 --port 8080
 
 - Create SQLite database
 

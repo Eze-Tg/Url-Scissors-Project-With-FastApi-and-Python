@@ -7,13 +7,18 @@ from sqlalchemy.orm import Session
 import models, crud, schemas, utils
 from database import SessionLocal, engine
 from starlette.datastructures import URL
+from starlette.staticfiles import StaticFiles
 from config import get_settings
 from typing import Optional
-
+from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
-models.Base.metadata.create_all(bind=engine)
 
+app.mount('/static', StaticFiles(directory="static"), name="static")
+
+templates = Jinja2Templates(directory="templates")
+
+models.Base.metadata.create_all(bind=engine)
 
 def get_db():
     db = SessionLocal()
@@ -21,7 +26,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
 
 def raise_bad_request(message):
     raise HTTPException(status_code=400, detail=message)
@@ -34,6 +38,9 @@ def raise_not_found(request):
 def read_root():
     return "Welcome to the URL shortener API :)"
 
+@app.get('/home')
+async def home(request: Request):
+    return templates.TemplateResponse("home.html", {"request": request})
 
 def get_admin_info(db_url: models.URL) -> schemas.URLInfo:
     base_url = URL(get_settings().base_url)
@@ -81,8 +88,6 @@ def create_custom_url(url: schemas.URLBase, db: Session = Depends(get_db)):
     #     raise HTTPException(status_code=400, detail="Custom Alias already exists")
 
 
-
-
 @app.get("/{url_key}")
 def forward_to_target_url(
         url_key: str,
@@ -94,7 +99,6 @@ def forward_to_target_url(
         return RedirectResponse(db_url.target_url)
     else:
         raise_not_found(request)
-
 
 @app.delete("/admin/{secret_key}")
 def delete_url(
@@ -117,3 +121,5 @@ def get_url_info(
         return get_admin_info(db_url)
     else:
         raise_not_found(request)
+
+
