@@ -5,9 +5,9 @@ from functools import lru_cache
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    env_name: str = "Local"
+    env_name: str = "Development"
     base_url: str = "http://localhost:8000"
-    db_url: str = "postgresql://postgres:password@localhost:5432/url_scissors_db"
+    db_url: str = 'postgresql://postgres:password@localhost/url_scissors_db'
 
     class Config:
         env_file = ".env"

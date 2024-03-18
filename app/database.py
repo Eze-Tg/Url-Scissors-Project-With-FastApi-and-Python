@@ -7,9 +7,8 @@ from config import get_settings
 
 
 
-engine = create_engine(get_settings().db_url, connect_args={"check_same_thread": False}
-)
+engine = create_engine(get_settings().db_url)
 SessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine
-)
+    autocommit=False, autoflush=False, bind=engine)
+
 Base = declarative_base()
