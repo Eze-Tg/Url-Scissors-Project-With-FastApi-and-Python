@@ -1,7 +1,7 @@
 #Url-Scissors/main.py
 
 import validators
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 import models, crud, schemas, utils
@@ -11,6 +11,7 @@ from starlette.staticfiles import StaticFiles
 from config import get_settings
 from typing import Optional
 from fastapi.templating import Jinja2Templates
+import qrcode
 
 app = FastAPI()
 
@@ -122,4 +123,21 @@ def get_url_info(
     else:
         raise_not_found(request)
 
+
+@app.get("/qrcode/{short_url}")
+def generate_qrcode(short_url: str):
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(short_url)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    img_bytes = img.get_image()
+    response = Response(content=img_bytes, media_type="image/png")
+    return response
 
