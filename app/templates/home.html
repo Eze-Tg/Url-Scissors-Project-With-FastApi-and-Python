@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title>Scissor - URL Shortener</title>
-    <link rel="stylesheet" type="text/css"
-    href="{{ url_for('static', path='/url_short/css/base.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', path='/url_short/css/base.css')}}">
 </head>
 <body>
     <div class="container">
@@ -18,11 +17,12 @@
             </h1>
         </p>
         <input type="text" id="longUrlInput" placeholder="Enter URL to shorten">
-        <input type="text" id="customAliasInput" placeholder="Custom Alias (Optional)">
-        <button onclick="shortenUrl()">Shorten URL</button>
+      
+        <button id="shortenButton">Shorten URL</button>
         <p id="shortUrl"></p>
+        <div id="qrCodeContainer"></div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="{{ url_for('static', path='/url_short/js/script.js') }}"></script>
 </body>
 </html>

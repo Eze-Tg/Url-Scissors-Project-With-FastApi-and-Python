@@ -1,22 +1,33 @@
 // frontend/script.js
 
-async function shortenUrl() {
-    const longUrl = document.getElementById("longUrlInput").value;
-    const customAlias = document.getElementById("customAliasInput").value;
+document.addEventListener('DOMContentLoaded', function () {
+    const urlInput = document.getElementById('longUrlInput');
+    const shortUrlDisplay = document.getElementById('shortUrl');
+    const qrCodeContainer = document.getElementById('qrCodeContainer');
 
-    const response = await fetch("http://localhost:8000/shorten/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            long_url: longUrl,
-            custom_alias: customAlias
+    function shortenUrl() {
+        const longUrl = urlInput.value.trim();
+
+        fetch('/url', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ target_url: longUrl })
         })
-    });
+        .then(response => response.json())
+        .then(data => {
+            // Display short URL
+            shortUrlDisplay.textContent = `Shortened URL: ${data.url}`;
 
-    const data = await response.json();
-    const shortUrl = data.short_url;
+            // Display QR code
+            qrCodeContainer.innerHTML = `<img src="data:image/png;base64,${data.qr_code}" alt="QR Code">`;
+        })
+        .catch(error => console.error('Error:', error));
+    }
 
-    document.getElementById("shortUrl").innerText = shortUrl;
-}
+    // Attach click event listener to the button
+    const shortenUrlButton = document.getElementById('shortenButton');
+    shortenUrlButton.addEventListener('click', shortenUrl);
+});
+
