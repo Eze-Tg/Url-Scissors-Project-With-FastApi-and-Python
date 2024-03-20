@@ -12,6 +12,9 @@ from config import get_settings
 from typing import Optional
 from fastapi.templating import Jinja2Templates
 import qrcode
+from io import BytesIO
+from urllib.parse import quote
+from starlette.responses import Response
 
 app = FastAPI()
 
@@ -35,9 +38,7 @@ def raise_not_found(request):
     message = f"URL '{request.url}' doesn't exist"
     raise HTTPException(status_code=404, detail=message)
 
-@app.get("/")
-def read_root():
-    return "Welcome to the URL shortener API :)"
+
 
 @app.get('/home')
 async def home(request: Request):
@@ -54,50 +55,56 @@ def get_admin_info(db_url: models.URL) -> schemas.URLInfo:
 
 
 @app.post("/url", response_model=schemas.URLInfo)
-def create_url(url: schemas.URLBase, db: Session = Depends(get_db)):
-    if not validators.url(url.target_url):
+def cut_url(url: schemas.URLBase, db: Session = Depends(get_db)):
+    target_url = url.target_url  # Unpack the target_url attribute
+    if not validators.url(target_url):
         raise_bad_request(message="Your provided URL is not valid")
 
     db_url = crud.create_db_url(db=db, url=url)
     return get_admin_info(db_url)
 
 
-@app.post("/custom/")
-def create_custom_url(url: schemas.URLBase, db: Session = Depends(get_db)):
+@app.post("/url_to_qr", response_model=schemas.URLInfo)
+def generate_qrcode(url: schemas.URLBase, db: Session = Depends(get_db)) -> bytes:
     '''
-    Create a custom URL, Remeber to change your url to YOUR URL!,
-    right now, it is set as http://yourcustomdomain.com'''
-    custom_alias = url.custom_alias
-
-     # Check if Custom Alias is Provided
-    if not custom_alias:
-        raise HTTPException(status_code=400, detail="Custom Alias is required")
+    Generate a QR code for the provided URL'''
+    target = url.target_url
+    info =  cut_url(url, db)
     
+    #encode url to handle path segmeents
+    encoded_url = quote(info.url, safe='')
+
+    # Create QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4)
+    
+    qr.add_data(encoded_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    # Save QR code image to BytesIO buffer
+    img_bytes_io = BytesIO()
+    img.save(img_bytes_io)
+    img_bytes_io.seek(0)
+    img_bytes = img_bytes_io.getvalue()
+
+    response = Response(content=img_bytes, media_type="image/png")
+    #response.headers["Content-Disposition"] = "attachment; filename=qr_code.png"
+
+    return response
 
 
-    short_url = utils.generate_short_url(long_url=url.target_url, custom_alias=url.custom_alias)
-
-    print (f'++++Custom Url is {short_url}')
-
-    db_url = crud.create_db_url(db=db, url=url)
-
-
-    return {"short_url": short_url} 
-
- # Check if Custom Alias is Unique
-    # if crud.get_db_url_by_custom_alias(db=db, custom_alias=custom_alias):
-    #     raise HTTPException(status_code=400, detail="Custom Alias already exists")
-
-
-@app.get("/{url_key}")
-def forward_to_target_url(
-        url_key: str,
-        request: Request,
-        db: Session = Depends(get_db)
-    ):
-    if db_url := crud.get_db_url_by_key(db=db, url_key=url_key):
-        crud.update_db_clicks(db=db, db_url=db_url)
-        return RedirectResponse(db_url.target_url)
+@app.get(
+    "/admin/{secret_key}",
+    name="administration info",
+    response_model=schemas.URLInfo)
+def get_url_info(
+    secret_key: str, request: Request, db: Session = Depends(get_db)):
+    if db_url := crud.get_db_url_by_secret_key(db, secret_key=secret_key):
+        return get_admin_info(db_url)
     else:
         raise_not_found(request)
 
@@ -112,32 +119,70 @@ def delete_url(
         raise_not_found(request)
 
 
-@app.get(
-    "/admin/{secret_key}",
-    name="administration info",
-    response_model=schemas.URLInfo)
-def get_url_info(
-    secret_key: str, request: Request, db: Session = Depends(get_db)):
-    if db_url := crud.get_db_url_by_secret_key(db, secret_key=secret_key):
-        return get_admin_info(db_url)
-    else:
-        raise_not_found(request)
 
 
-@app.get("/qrcode/{short_url}")
-def generate_qrcode(short_url: str):
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
-    qr.add_data(short_url)
-    qr.make(fit=True)
+# @app.post("/shorten", response_model=schemas.URL_QRCODE)
+# def shorten_and_generate_qrcode(url: schemas.URLBase, db: Session = Depends(get_db)) -> Response:
+#     print('First Pass: shorten')
+#     shortened_url = create_url(url, db)
+#     print(f'++++++\n The shorturl is {shortened_url.url}\n++++++++++++')
+#     print('Second Pass: generate qr code')
+#     qr_code = generate_qrcode(shortened_url, db)
+#     print('Third Pass: return response')
 
-    img = qr.make_image(fill_color="black", back_color="white")
+#     info = url_info(shortened_url)
 
-    img_bytes = img.get_image()
-    response = Response(content=img_bytes, media_type="image/png")
-    return response
 
+#     response = Response(content=qr_code)
+#     response.headers["Content-Disposition"] = "attachment; filename=qr_code.png"
+#     return schemas.URL_QRCODE(qr_code=qr_code, **info.dict())
+
+#     # response = Response(content=qr_code, media_type="image/png")
+#     return schemas.URL_QRCode(qr_code=qr_code)
+
+
+#     # Create response with shortened URL and QR code image
+
+#     response.headers["Content-Disposition"] = f"attachment; filename=qr_code.png"
+#     return response
+
+
+
+# @app.post("/custom/")
+# def create_custom_url(url: schemas.URLBase, db: Session = Depends(get_db)):
+#     '''
+#     Create a custom URL, Remeber to change your url to YOUR URL!,
+#     right now, it is set as http://yourcustomdomain.com'''
+#     custom_alias = url.custom_alias
+
+#      # Check if Custom Alias is Provided
+#     if not custom_alias:
+#         raise HTTPException(status_code=400, detail="Custom Alias is required")
+    
+
+
+#     short_url = utils.generate_short_url(long_url=url.target_url, custom_alias=url.custom_alias)
+
+#     print (f'++++Custom Url is {short_url}')
+
+#     db_url = crud.create_db_url(db=db, url=url)
+
+
+#     return {"short_url": short_url} 
+
+#  # Check if Custom Alias is Unique
+#     # if crud.get_db_url_by_custom_alias(db=db, custom_alias=custom_alias):
+#     #     raise HTTPException(status_code=400, detail="Custom Alias already exists")
+
+
+# @app.get("/{url_key}")
+# def forward_to_target_url(
+#         url_key: str,
+#         request: Request,
+#         db: Session = Depends(get_db)
+#     ):
+#     if db_url := crud.get_db_url_by_key(db=db, url_key=url_key):
+#         crud.update_db_clicks(db=db, db_url=db_url)
+#         return RedirectResponse(db_url.target_url)
+#     else:
+#         raise_not_found(request)

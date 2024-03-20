@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 class URLBase(BaseModel):
     target_url: str
-    custom_alias: str = None
+    #custom_alias: str = None
 
 class URL(URLBase):
     is_active: bool
@@ -16,3 +16,6 @@ class URL(URLBase):
 class URLInfo(URL):
     url: str
     admin_url: str
+
+class URL_QRCODE(URL):
+    qr_code: bytes
