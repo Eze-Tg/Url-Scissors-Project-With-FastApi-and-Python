@@ -92,8 +92,6 @@ def generate_qrcode(url: schemas.URLBase, db: Session = Depends(get_db)) -> byte
     img_bytes = img_bytes_io.getvalue()
 
     response = Response(content=img_bytes, media_type="image/png")
-    #response.headers["Content-Disposition"] = "attachment; filename=qr_code.png"
-
     return response
 
 
@@ -147,42 +145,3 @@ def delete_url(
 #     return response
 
 
-
-# @app.post("/custom/")
-# def create_custom_url(url: schemas.URLBase, db: Session = Depends(get_db)):
-#     '''
-#     Create a custom URL, Remeber to change your url to YOUR URL!,
-#     right now, it is set as http://yourcustomdomain.com'''
-#     custom_alias = url.custom_alias
-
-#      # Check if Custom Alias is Provided
-#     if not custom_alias:
-#         raise HTTPException(status_code=400, detail="Custom Alias is required")
-    
-
-
-#     short_url = utils.generate_short_url(long_url=url.target_url, custom_alias=url.custom_alias)
-
-#     print (f'++++Custom Url is {short_url}')
-
-#     db_url = crud.create_db_url(db=db, url=url)
-
-
-#     return {"short_url": short_url} 
-
-#  # Check if Custom Alias is Unique
-#     # if crud.get_db_url_by_custom_alias(db=db, custom_alias=custom_alias):
-#     #     raise HTTPException(status_code=400, detail="Custom Alias already exists")
-
-
-# @app.get("/{url_key}")
-# def forward_to_target_url(
-#         url_key: str,
-#         request: Request,
-#         db: Session = Depends(get_db)
-#     ):
-#     if db_url := crud.get_db_url_by_key(db=db, url_key=url_key):
-#         crud.update_db_clicks(db=db, db_url=db_url)
-#         return RedirectResponse(db_url.target_url)
-#     else:
-#         raise_not_found(request)
